@@ -1,20 +1,65 @@
 # PSVita-Utils
-An app for PSVita Utilities made for Android, iOS, Windows, Linux &amp; MacOS
 
-Made for PSVita lovers, this app serves as a main checkpoint where you can find everything you need:
-- Mobile/PC Tools
-- Dev Tools
-- Homebrew Databases
-- Plugin Databases
-- An FTP Client
-- A File Manager
-- A PKG Installer/Manager
-- Custom Repo support
-- A custom Homebrew Selection made by me
-- (BONUS) PSP Databases
+**A multi-platform utility app for everything PSVita.**
 
-And its available almost everywhere! Android, Linux, iOS, MacOS and Windows.
-The app is also open source for each platforms.
-I added a License to get credit for my work. To leave it open source, i took MIT!
+> _Made for PSVita lovers, by a PSVita lover._
 
-!EVERYTHING IS STILL A WORK IN PROGRESS! And kind of a Proof Of Concept
+---
+
+### 🌟 What is PSVita-Utils?
+
+A powerful and lightweight app built to serve as your ultimate PSVita toolkit — whether you're on Android, iOS, Windows, Linux, or macOS. Think of it as your **portable PSVita command center**.
+
+---
+
+### 🧰 Core Features
+
+- 📁 **File Manager**
+- 🌐 **FTP Client** (anonymous login supported!)
+- 📦 **PKG Installer & Manager** *(WIP)*
+- 🎨 **Custom Themes & Theme Import System**  
+    > Default: VitaDB Style, PS Store, CBPS DB
+- 🔄 **Custom Download Location Support**  
+    > Default: `/sdcard/Download`
+- 📚 **VitaDB / CBPS DB Integration**
+- 💾 **Mobile & PC Tool Libraries**
+- 🧪 **Dev Tools + Plugin Databases**
+- 🎮 **Custom Homebrew Selections** by me
+- ➕ **Add Your Own Repos!**
+- 🎁 **BONUS: PSP Homebrew & Plugin Databases**
+
+---
+
+### 🚀 Platforms
+
+Available (or will be) on:
+
+- ✅ Android (Play Store, F-Droid, GitHub)
+- 🧪 iOS *(experimental)*
+- 💻 Windows / Linux / macOS *(via GitHub)*
+
+---
+
+### 📜 License
+
+Licensed under the **MIT License** — free, open-source, adless.  
+Give credit, remix, and build on it!
+
+---
+
+### ⚠️ Status
+
+🧪 **WORK IN PROGRESS**  
+This app is still being built and tested. It's currently in **Proof of Concept** stage.  
+Check out the repo, leave issues, and follow development!
+
+---
+
+### 💬 Connect
+
+- 📣 [GitHub Issues](https://github.com/SSMG4/PSVita-Utils/issues) for bugs & feedback
+- 💬 [Discord Server](https://discord.gg/7hYjbBHmq3) (join the community!)
+
+---
+
+> "No handheld left behind."
