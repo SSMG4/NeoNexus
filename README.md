@@ -20,7 +20,7 @@ A powerful and lightweight app built to serve as your ultimate PSVita toolkit �
 - 🎨 **Custom Themes & Theme Import System**  
     > Default: VitaDB Style, PS Store, CBPS DB
 - 🔄 **Custom Download Location Support**  
-    > Default: `/sdcard/Download`
+    > Default: `Download Folder on all platforms`
 - 📚 **VitaDB / CBPS DB Integration**
 - 💾 **Mobile & PC Tool Libraries**
 - 🧪 **Dev Tools + Plugin Databases**
