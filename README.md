@@ -1,5 +1,9 @@
 # PSVita-Utils
 
+EDIT: This project has currently been paused and will resume later this year, thanks for your patience!
+
+Current Update: 2025.06.27
+
 **A multi-platform utility app for everything PSVita.**
 
 > _Made for PSVita lovers, by a PSVita lover._
