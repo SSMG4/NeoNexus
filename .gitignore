@@ -1,0 +1,245 @@
+# =========================
+# Global
+# =========================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.swn
+*.sublime-workspace
+*.sublime-project
+*.vscode/
+.idea/
+*.iml
+*.orig
+*.rej
+*.patch
+*.diff
+*.cache
+*.pid
+*.seed
+*.lock
+*.db
+*.sqlite
+*.sqlite3
+*.env
+.env.*
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =========================
+# Windows (C#, C++, Dart)
+# =========================
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+*.ncb
+*.aps
+*.pch
+*.pdb
+*.ipch
+*.obj
+*.tlh
+*.tli
+*.log
+*.idb
+*.class
+*.ilk
+*.res
+*.exe
+*.dll
+*.lib
+*.exp
+*.manifest
+*.rpt
+*.vspscc
+*.vssscc
+*.cache
+*.csproj.user
+*.csproj.vspscc
+*.dbmdl
+*.bak
+*.psess
+*.vsp
+*.vsix
+*.docstates
+*.sdf
+*.opensdf
+*.tlog
+*.lastbuildstate
+*.sbr
+*.scc
+*.msi
+*.msm
+*.msp
+
+# Dart
+.dart_tool/
+.packages
+.pub/
+build/
+*.dart.js
+*.info.json
+*.js
+*.js.map
+
+# =========================
+# Linux (C, C++)
+# =========================
+*.o
+*.out
+*.a
+*.so
+*.lo
+*.la
+*.d
+*.gcno
+*.gcda
+*.gcov
+*.gch
+*.sym
+*.dSYM/
+*.dSYM/*
+*.dSYM/**
+
+# =========================
+# macOS (Swift)
+# =========================
+# Xcode
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+*.xcdebugger
+*.xcconfig
+*.xcsettings
+*.swiftpm/
+Package.resolved
+
+# =========================
+# Android (Kotlin, Java)
+# =========================
+.gradle/
+build/
+local.properties
+*.iml
+*.apk
+*.ap_
+*.dex
+*.class
+*.jar
+*.war
+*.aar
+*.hprof
+*.so
+*.log
+*.keystore
+*.jks
+*.cxx/
+*.externalNativeBuild/
+captures/
+output.json
+lint-results.xml
+lint-results.html
+*.kotlin_module
+*.kotlin_metadata
+*.kotlin_builtins
+*.kotlin_cache
+*.kotlin_*
+
+# =========================
+# iOS (Swift)
+# =========================
+Pods/
+Podfile.lock
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+*.xcdebugger
+*.xcconfig
+*.xcsettings
+*.swiftpm/
+Package.resolved
+
+# =========================
+# CI Artifacts
+# =========================
+*.coverage
+*.gcov
+*.lcov
+*.testresult
+*.trx
+*.xml
+*.json
+test-output/
+test-results/
+coverage/
+reports/
+*.log
+
+# =========================
+# Packaging
+# =========================
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.pkg
+*.deb
+*.rpm
+
+# =========================
+# Secrets
+# =========================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.asc
+*.gpg
+*.sig
+
+# =========================
+# Documentation
+# =========================
+*.pdf
+*.docx
+*.pptx
+*.xlsx
+*.md~
