@@ -13,8 +13,8 @@
 [![GitHub Downloads (latest)](https://img.shields.io/github/downloads/SSMG4/NeoNexus/latest)](https://github.com/SSMG4/NeoNexus/releases/latest)
 [![GitHub Release](https://img.shields.io/github/v/release/SSMG4/NeoNexus)](https://github.com/SSMG4/NeoNexus/releases/latest)
 [![GitHub Repo stars](https://img.shields.io/github/stars/SSMG4/NeoNexus)](https://github.com/SSMG4/NeoNexus/stargazers)
-[![Pull Requests](https://img.shields.io/github/pulls/SSMG4/NeoNexus)
-[![Issues](https://img.shields.io/github/issues/SSMG4/NeoNexus)
+[![Pull Requests](https://img.shields.io/github/pulls/SSMG4/NeoNexus)](https://github.com/SSMG4/NeoNexus/pulls)
+[![Issues](https://img.shields.io/github/issues/SSMG4/NeoNexus)](https://github.com/SSMG4/NeoNexus/issues)
 
 **A multi-platform utility app for everything PS Vita related.**
 
