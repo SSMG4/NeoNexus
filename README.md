@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/SSMG4/NeoNexus/raw/refs/heads/master/Images/NeoNexus-PLogo.png" width="225" height="225" alt="NeoNexus">
+<img src="https://github.com/SSMG4/NeoNexus/raw/refs/heads/master/Images/NeoNexus-PLogo.png" width="150" height="150" alt="NeoNexus">
 
 # NeoNexus
 
