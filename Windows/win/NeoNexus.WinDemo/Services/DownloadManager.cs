@@ -20,7 +20,8 @@ namespace NeoNexus.WinDemo.Services
         private readonly string _tempExt;
         private bool _disposed;
 
-        public DownloadManager(string temporaryExtension = null)
+        // Accept nullable default to avoid CS8625 when defaulting to null
+        public DownloadManager(string? temporaryExtension = null)
         {
             _tempExt = temporaryExtension ?? Config.Current.Download.TemporaryExtension ?? ".part";
             var handler = new HttpClientHandler()
@@ -40,7 +41,7 @@ namespace NeoNexus.WinDemo.Services
         /// progress: optional progress reporter (percentage 0..100).
         /// cancellationToken: optional cancellation token.
         /// </summary>
-        public async Task DownloadFileAsync(string url, string destination, IProgress<double> progress = null, CancellationToken cancellationToken = default)
+        public async Task DownloadFileAsync(string url, string destination, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(url)) throw new ArgumentNullException(nameof(url));
             if (string.IsNullOrWhiteSpace(destination)) throw new ArgumentNullException(nameof(destination));
@@ -120,11 +121,6 @@ namespace NeoNexus.WinDemo.Services
                                 }
                             }
                         }
-                        else
-                        {
-                            // totalLength already has value from HEAD
-                            // keep existingLength as-is
-                        }
 
                         // Open file for append (or create)
                         using (var fs = new FileStream(temp, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
@@ -164,7 +160,7 @@ namespace NeoNexus.WinDemo.Services
                 finally
                 {
                     // Release lock by disposing lockFs, then remove lock file
-                    lockFs.Close();
+                    try { lockFs.Close(); } catch { }
                     try { File.Delete(lockFile); } catch { /* best-effort */ }
                 }
             }
@@ -174,7 +170,7 @@ namespace NeoNexus.WinDemo.Services
         /// Download with expected SHA256 checksum verification.
         /// Throws InvalidOperationException if checksum mismatch.
         /// </summary>
-        public async Task DownloadFileWithChecksumAsync(string url, string destination, string expectedSha256Hex, IProgress<double> progress = null, CancellationToken cancellationToken = default)
+        public async Task DownloadFileWithChecksumAsync(string url, string destination, string? expectedSha256Hex, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
         {
             await DownloadFileAsync(url, destination, progress, cancellationToken).ConfigureAwait(false);
 
