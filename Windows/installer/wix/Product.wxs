@@ -3,7 +3,8 @@
   <Product Id="*" Name="NeoNexus" Language="1033" Version="0.1.0.0" Manufacturer="SSMG4" UpgradeCode="b8f3a2c1-4d9e-4b6f-9c2a-1e3d5f7a8b9c">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
 
-    <MajorUpgrade AllowDowngrade="no" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <!-- Removed unsupported AllowDowngrade attribute to be compatible with WiX 3.x on the runner -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
     <MediaTemplate />
 
