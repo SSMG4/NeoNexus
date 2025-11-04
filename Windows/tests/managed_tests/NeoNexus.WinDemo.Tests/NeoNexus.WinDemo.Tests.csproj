@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <!-- Updated to net8.0 to match main project -->
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Ensure tests can reference the main project for non-UI helpers -->
     <ProjectReference Include="..\..\..\win\NeoNexus.WinDemo\NeoNexus.WinDemo.csproj" />
   </ItemGroup>
 </Project>
