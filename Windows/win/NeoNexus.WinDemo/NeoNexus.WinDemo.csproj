@@ -5,12 +5,54 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Publish/runtime configuration: x64-only -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>false</PublishTrimmed>
+    <SelfContained>false</SelfContained>
+
+    <!-- Ensure deterministic output folder for Release/publish -->
+    <AssemblyName>NeoNexus.WinDemo</AssemblyName>
     <RootNamespace>NeoNexus.WinDemo</RootNamespace>
   </PropertyGroup>
+
   <ItemGroup>
-    <!-- If you want to include the native DLL in builds for convenience -->
-    <None Update="..\..\..\native\bin\NeoNexusNative.dll">
+    <!-- Common packages recommended for Step 1 -->
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.1.0" />
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Polly" Version="7.4.0" />
+    <!-- Optional: FluentFTP for FTP client features -->
+    <PackageReference Include="FluentFTP" Version="37.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include appsettings.json in output -->
+    <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- If native DLL is built into this path, copy it to output/publish -->
+    <None Include="..\..\..\native\build\bin\NeoNexusNative.dll" Condition="Exists('..\..\..\native\build\bin\NeoNexusNative.dll')">
+      <Link>NeoNexusNative.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- After publish, ensure native dll is present in publish folder (handles CI packaging) -->
+  <Target Name="CopyNativeAfterPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <NativeSource>$(ProjectDir)..\..\..\native\build\bin\NeoNexusNative.dll</NativeSource>
+      <PublishFolder>$(PublishDir)</PublishFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <NativeToCopy Include="$(NativeSource)" Condition="Exists('$(NativeSource)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeToCopy)" DestinationFolder="$(PublishFolder)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
