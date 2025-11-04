@@ -5,13 +5,9 @@
 #include <windows.h>
 #include <combaseapi.h>
 #include <vector>
-#include <nlohmann/json.hpp> // optional: if you don't have this, we fallback to manual JSON
 
-// If you have nlohmann/json available via vcpkg, you can enable the #define below.
-// Otherwise the code falls back to a manual JSON output.
-#if 0
-using json = nlohmann::json;
-#endif
+// Note: removed nlohmann/json.hpp dependency so CI doesn't require that external lib.
+// We build JSON manually in this file to avoid pulling native dependencies.
 
 const char* NN_GetVersion() {
     return "NeoNexus.Native v0.2-windows";
@@ -35,7 +31,7 @@ char* NN_ListPkgFiles(const char* pkgPath) {
     for (const auto &e : entries) {
         if (!first) ss << ",";
         ss << "{";
-        // naive JSON escaping for path; replace " with \"
+        // naive JSON escaping for path; replace backslash and quote
         std::string p = e.path;
         std::string escaped;
         escaped.reserve(p.size());
