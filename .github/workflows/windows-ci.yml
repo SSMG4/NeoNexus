@@ -1,0 +1,120 @@
+# Windows CI for NeoNexus (x64 only)
+name: Windows CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Configuration to build'
+        required: true
+        default: 'Release'
+      publish:
+        description: 'Publish managed app after build'
+        required: true
+        default: 'true'
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build (Windows x64)
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET 7
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Setup MSBuild Tools (Visual Studio)
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Ensure CMake available
+        uses: lukka/get-cmake@v3
+        with:
+          cmake-version: '3.25.0'
+
+      - name: Install WiX (Chocolatey)
+        if: runner.os == 'Windows'
+        run: |
+          choco install wix -y
+        shell: powershell
+
+      - name: Restore NuGet packages
+        run: dotnet restore Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj
+
+      - name: Build native (CMake x64 Release)
+        working-directory: Windows/native
+        run: |
+          mkdir -Force build
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -D CMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+        shell: pwsh
+
+      - name: Build managed (dotnet build)
+        run: dotnet build Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }}
+
+      - name: Run unit tests
+        run: dotnet test Windows/tests/managed_tests/NeoNexus.WinDemo.Tests/NeoNexus.WinDemo.Tests.csproj -c ${{ github.event.inputs.configuration || 'Release' }} --no-build --verbosity normal
+
+      - name: Publish managed app (win-x64)
+        if: ${{ github.event.inputs.publish == 'true' || github.event.inputs.publish == 'True' || github.event.inputs.publish == '1' }}
+        run: |
+          dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }} -r win-x64 -o Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish --self-contained false
+        shell: bash
+
+      - name: Copy native DLL into publish folder
+        run: |
+          $native = "Windows/native/build/bin/NeoNexusNative.dll"
+          $publish = "Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish"
+          if (Test-Path $native) {
+            Copy-Item $native $publish -Force
+            Write-Host "Copied native DLL to publish"
+          } else {
+            Write-Host "Native DLL not found at $native"
+            exit 0
+          }
+        shell: pwsh
+
+      - name: Attempt Create MSI with WiX
+        run: |
+          pushd Windows/installer/wix
+          if (Test-Path Product.wxs) {
+            if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
+              candle.exe -arch x64 Product.wxs
+              light.exe -ext WixUIExtension Product.wixobj -out ../../build/artifacts/NeoNexus.msi
+            } else {
+              Write-Host "WiX candle not found; skipping MSI creation"
+            }
+          } else {
+            Write-Host "Product.wxs not found; skipping MSI creation"
+          }
+          popd
+        shell: pwsh
+
+      - name: Upload publish folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoNexus-publish-win-x64
+          path: Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish
+
+      - name: Upload MSI (if exists)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoNexus-msi
+          path: Windows/build/artifacts/NeoNexus.msi
+          if-no-files-found: ignore
+
+      - name: Upload native DLL (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoNexusNative.dll
+          path: Windows/native/build/bin/NeoNexusNative.dll
+          if-no-files-found: ignore
