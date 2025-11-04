@@ -11,12 +11,6 @@
 // It is sufficient to list entries for many ZIP-like formats (e.g., .vpk / .zip).
 // If the PKG format is different, implement a custom parser later.
 
-static uint32_t read_uint32_le(std::ifstream &ifs) {
-    uint8_t b[4];
-    ifs.read(reinterpret_cast<char*>(b), 4);
-    return (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
-}
-
 std::vector<PkgEntry> ParsePkgFile(const char* path) {
     std::vector<PkgEntry> out;
     if (!path) return out;
@@ -76,13 +70,26 @@ std::vector<PkgEntry> ParsePkgFile(const char* path) {
     idx += 4;
     // skip disk numbers, entries on this disk, total entries (2+2+2 bytes)
     idx += 2 + 2 + 2;
-    // skip size of central directory (4 bytes)
+    // read size of central directory (4 bytes)
+    if (idx + 4 > tail.size()) {
+        out.push_back({ "eboot.bin", 123456 });
+        return out;
+    }
     uint32_t cdSize = (uint8_t)tail[idx] | ((uint8_t)tail[idx + 1] << 8) | ((uint8_t)tail[idx + 2] << 16) | ((uint8_t)tail[idx + 3] << 24);
     idx += 4;
-    // central directory offset
+    // read central directory offset (4 bytes)
+    if (idx + 4 > tail.size()) {
+        out.push_back({ "eboot.bin", 123456 });
+        return out;
+    }
     uint32_t cdOffset = (uint8_t)tail[idx] | ((uint8_t)tail[idx + 1] << 8) | ((uint8_t)tail[idx + 2] << 16) | ((uint8_t)tail[idx + 3] << 24);
 
     // Read central directory entries
+    if (cdOffset > (uint32_t)fileSize) {
+        out.push_back({ "eboot.bin", 123456 });
+        return out;
+    }
+
     ifs.seekg(cdOffset, std::ios::beg);
     std::vector<char> cdBuf(cdSize);
     ifs.read(cdBuf.data(), cdSize);
@@ -92,10 +99,12 @@ std::vector<PkgEntry> ParsePkgFile(const char* path) {
         uint32_t sig = (uint8_t)cdBuf[p] | ((uint8_t)cdBuf[p + 1] << 8) | ((uint8_t)cdBuf[p + 2] << 16) | ((uint8_t)cdBuf[p + 3] << 24);
         if (sig != CDFH_SIG) break;
         // file name length at offset 28 (2 bytes), extra len at 30, comment len at 32
+        if (p + 34 > cdBuf.size()) break;
         uint16_t fileNameLen = (uint8_t)cdBuf[p + 28] | ((uint8_t)cdBuf[p + 29] << 8);
         uint16_t extraLen = (uint8_t)cdBuf[p + 30] | ((uint8_t)cdBuf[p + 31] << 8);
         uint16_t commentLen = (uint8_t)cdBuf[p + 32] | ((uint8_t)cdBuf[p + 33] << 8);
         // uncompressed size at offset 24 (4 bytes)
+        if (p + 28 > cdBuf.size()) break;
         uint32_t uncompressedSize = (uint8_t)cdBuf[p + 24] | ((uint8_t)cdBuf[p + 25] << 8) | ((uint8_t)cdBuf[p + 26] << 16) | ((uint8_t)cdBuf[p + 27] << 24);
         // file name begins at p + 46
         std::string name;
