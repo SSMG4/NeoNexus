@@ -98,19 +98,55 @@ jobs:
           }
         shell: powershell
 
-      - name: Attempt Create MSI with WiX
+      - name: Attempt Create MSI with WiX (harvest publish folder with heat.exe)
         run: |
-          Push-Location Windows/installer/wix
-          if (Test-Path Product.wxs) {
-            if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
-              candle.exe -arch x64 Product.wxs
-              light.exe -ext WixUIExtension Product.wixobj -out ../../build/artifacts/NeoNexus.msi
-            } else {
-              Write-Host "WiX candle not found; skipping MSI creation"
-            }
-          } else {
-            Write-Host "Product.wxs not found; skipping MSI creation"
+          $wixDir = "Windows/installer/wix"
+          $publish = Resolve-Path "Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish" -ErrorAction SilentlyContinue
+          if (-not $publish) {
+            Write-Host "Publish folder not found. Ensure publish step ran (set publish=true). Aborting MSI creation."
+            exit 0
           }
+          $publishPath = $publish.Path
+          Write-Host "Publish folder: $publishPath"
+
+          Push-Location $wixDir
+
+          # Harvest publish folder into a fragment file (PublishFiles.wxs) using heat.exe
+          # -gg: generate GUIDs for components
+          # -srd: suppress root directory element (we will ref INSTALLFOLDER in Product.wxs)
+          # -dr INSTALLFOLDER: set directory reference id
+          # -var var.PublishDir: generate variables instead of absolute paths
+          $heatCmd = "heat.exe dir `"$publishPath`" -cg PublishFiles -gg -sfrag -srd -dr INSTALLFOLDER -var var.PublishDir -out PublishFiles.wxs"
+          Write-Host "Running: $heatCmd"
+          & heat.exe dir "$publishPath" -cg PublishFiles -gg -sfrag -srd -dr INSTALLFOLDER -var var.PublishDir -out PublishFiles.wxs
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "heat.exe failed with exit code $LASTEXITCODE"
+            Pop-Location
+            exit 1
+          }
+
+          # Now call candle on both Product.wxs and PublishFiles.wxs; pass PublishDir variable for relative paths
+          $candleCmd = "candle.exe -arch x64 -dPublishDir=`"$publishPath`" Product.wxs PublishFiles.wxs"
+          Write-Host "Running: $candleCmd"
+          & candle.exe -arch x64 -dPublishDir="$publishPath" Product.wxs PublishFiles.wxs
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "candle.exe failed with exit code $LASTEXITCODE"
+            Pop-Location
+            exit 1
+          }
+
+          # Link with light (include both wixobj files)
+          $lightCmd = "light.exe -ext WixUIExtension Product.wixobj PublishFiles.wixobj -out ../../build/artifacts/NeoNexus.msi"
+          Write-Host "Running: $lightCmd"
+          & light.exe -ext WixUIExtension Product.wixobj PublishFiles.wixobj -out ../../build/artifacts/NeoNexus.msi
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "light.exe failed with exit code $LASTEXITCODE"
+            Pop-Location
+            exit 1
+          }
+
+          Write-Host "MSI created at Windows/build/artifacts/NeoNexus.msi"
           Pop-Location
         shell: powershell
 
