@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!-- Updated to a supported target framework (net8.0-windows) to avoid EOL warnings -->
+    <!-- Use the generic SDK with UseWindowsForms to avoid NETSDK1137 warning -->
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Align package versions to the runner-resolved versions to avoid NU1603 warnings -->
+    <!-- Align package versions -->
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
