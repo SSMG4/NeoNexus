@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using NeoNexus.WinDemo.Models;
 
@@ -11,14 +13,36 @@ namespace NeoNexus.WinDemo.Services
     {
         private static readonly HttpClient http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
 
+        /// <summary>
+        /// Fetch and parse CBPS CSV with caching.
+        /// </summary>
         public static async Task<List<CbpsEntry>> FetchAndParseCsvAsync(string rawCsvUrl)
         {
-            using var res = await http.GetAsync(rawCsvUrl).ConfigureAwait(false);
-            res.EnsureSuccessStatusCode();
-            using var stream = await res.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using var sr = new StreamReader(stream);
-            var all = await sr.ReadToEndAsync().ConfigureAwait(false);
-            return ParseCsv(all);
+            var cacheFolder = Config.Current.Cache.CacheFolder;
+            Directory.CreateDirectory(cacheFolder);
+
+            string cacheFile = Path.Combine(cacheFolder, UrlToCacheFileName(rawCsvUrl));
+            int ttl = Math.Max(0, Config.Current.Cache.CacheTtlSeconds);
+
+            if (File.Exists(cacheFile))
+            {
+                var info = new FileInfo(cacheFile);
+                if ((DateTime.UtcNow - info.LastWriteTimeUtc).TotalSeconds <= ttl)
+                {
+                    var cached = await File.ReadAllTextAsync(cacheFile).ConfigureAwait(false);
+                    return ParseCsv(cached);
+                }
+            }
+
+            using (var res = await http.GetAsync(rawCsvUrl).ConfigureAwait(false))
+            {
+                res.EnsureSuccessStatusCode();
+                var csv = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                try { await File.WriteAllTextAsync(cacheFile, csv).ConfigureAwait(false); } catch { /* best-effort */ }
+
+                return ParseCsv(csv);
+            }
         }
 
         public static List<CbpsEntry> ParseCsv(string csvText)
@@ -106,6 +130,15 @@ namespace NeoNexus.WinDemo.Services
             }
             fields.Add(cur.ToString());
             return fields;
+        }
+
+        private static string UrlToCacheFileName(string url)
+        {
+            using (var sha = SHA256.Create())
+            {
+                var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(url));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant() + ".csv";
+            }
         }
     }
 }
