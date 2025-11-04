@@ -33,19 +33,19 @@ jobs:
       - name: Setup MSBuild Tools (Visual Studio)
         uses: microsoft/setup-msbuild@v1
 
-      - name: Setup CMake (Kitware)
-        uses: kitware/setup-cmake@v2
-        with:
-          cmake-version: '3.25.0'
+      - name: Install CMake via Chocolatey
+        run: |
+          choco install cmake --version 3.25.0 -y
+        shell: powershell
 
       - name: Install WiX (Chocolatey)
-        if: runner.os == 'Windows'
         run: |
           choco install wix -y
         shell: powershell
 
       - name: Restore NuGet packages
         run: dotnet restore Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj
+        shell: powershell
 
       - name: Build native (CMake x64 Release)
         working-directory: Windows/native
@@ -57,9 +57,11 @@ jobs:
 
       - name: Build managed (dotnet build)
         run: dotnet build Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }}
+        shell: powershell
 
       - name: Run unit tests
         run: dotnet test Windows/tests/managed_tests/NeoNexus.WinDemo.Tests/NeoNexus.WinDemo.Tests.csproj -c ${{ github.event.inputs.configuration || 'Release' }} --no-build --verbosity normal
+        shell: powershell
 
       - name: Publish managed app (win-x64)
         if: ${{ github.event.inputs.publish == 'true' }}
