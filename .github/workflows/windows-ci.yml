@@ -33,14 +33,30 @@ jobs:
       - name: Setup MSBuild Tools (Visual Studio)
         uses: microsoft/setup-msbuild@v1
 
-      - name: Install CMake via Chocolatey
+      - name: Ensure CMake available (install only if missing)
         run: |
-          choco install cmake --version 3.25.0 -y
+          $cm = Get-Command cmake -ErrorAction SilentlyContinue
+          if ($cm) {
+            Write-Host "CMake found at $($cm.Source)"
+            cmake --version
+          } else {
+            Write-Host "CMake not found. Installing via Chocolatey..."
+            choco install cmake -y
+            Write-Host "CMake installation exit code: $LASTEXITCODE"
+            cmake --version
+          }
         shell: powershell
 
-      - name: Install WiX (Chocolatey)
+      - name: Ensure WiX available (install only if missing)
         run: |
-          choco install wix -y
+          $candle = Get-Command candle.exe -ErrorAction SilentlyContinue
+          if ($candle) {
+            Write-Host "WiX detected: $($candle.Source)"
+          } else {
+            Write-Host "WiX not found; installing via Chocolatey..."
+            choco install wix -y
+            Write-Host "WiX install exit code: $LASTEXITCODE"
+          }
         shell: powershell
 
       - name: Restore NuGet packages
@@ -74,6 +90,7 @@ jobs:
           $native = "Windows/native/build/bin/NeoNexusNative.dll"
           $publish = "Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish"
           if (Test-Path $native) {
+            if (-not (Test-Path $publish)) { Write-Host "Publish folder not found; creating $publish"; New-Item -ItemType Directory -Path $publish -Force | Out-Null }
             Copy-Item $native $publish -Force
             Write-Host "Copied native DLL to publish"
           } else {
