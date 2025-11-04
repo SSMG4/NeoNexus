@@ -7,8 +7,28 @@
 
     <MediaTemplate />
 
+    <!-- Install files from dotnet publish output (win-x64 publish folder).
+         Update the Source paths if your CI/publish locations differ.
+    -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="NeoNexus" />
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="cmpNeoNexusExe" Guid="*">
+        <File Id="fileNeoNexusExe" Source="$(var.ProjectDir)\..\..\win\NeoNexus.WinDemo\bin\Release\net7.0-windows\win-x64\publish\NeoNexus.WinDemo.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="cmpNeoNexusNative" Guid="*">
+        <File Id="fileNeoNexusNative" Source="$(var.ProjectDir)\..\..\native\build\bin\NeoNexusNative.dll" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
 
     <Feature Id="ProductFeature" Title="NeoNexus" Level="1">
+      <ComponentRef Id="cmpNeoNexusExe" />
+      <ComponentRef Id="cmpNeoNexusNative" />
     </Feature>
   </Product>
 </Wix>
