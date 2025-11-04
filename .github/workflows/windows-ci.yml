@@ -9,12 +9,9 @@ on:
         required: true
         default: 'Release'
       publish:
-        description: 'Publish managed app after build'
+        description: 'Publish managed app after build (true/false)'
         required: true
         default: 'true'
-  push:
-    branches:
-      - master
 
 jobs:
   build:
@@ -36,8 +33,8 @@ jobs:
       - name: Setup MSBuild Tools (Visual Studio)
         uses: microsoft/setup-msbuild@v1
 
-      - name: Ensure CMake available
-        uses: lukka/get-cmake@v3
+      - name: Setup CMake (Kitware)
+        uses: kitware/setup-cmake@v2
         with:
           cmake-version: '3.25.0'
 
@@ -56,7 +53,7 @@ jobs:
           mkdir -Force build
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -D CMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-        shell: pwsh
+        shell: powershell
 
       - name: Build managed (dotnet build)
         run: dotnet build Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }}
@@ -65,10 +62,10 @@ jobs:
         run: dotnet test Windows/tests/managed_tests/NeoNexus.WinDemo.Tests/NeoNexus.WinDemo.Tests.csproj -c ${{ github.event.inputs.configuration || 'Release' }} --no-build --verbosity normal
 
       - name: Publish managed app (win-x64)
-        if: ${{ github.event.inputs.publish == 'true' || github.event.inputs.publish == 'True' || github.event.inputs.publish == '1' }}
+        if: ${{ github.event.inputs.publish == 'true' }}
         run: |
           dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }} -r win-x64 -o Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish --self-contained false
-        shell: bash
+        shell: powershell
 
       - name: Copy native DLL into publish folder
         run: |
@@ -79,13 +76,12 @@ jobs:
             Write-Host "Copied native DLL to publish"
           } else {
             Write-Host "Native DLL not found at $native"
-            exit 0
           }
-        shell: pwsh
+        shell: powershell
 
       - name: Attempt Create MSI with WiX
         run: |
-          pushd Windows/installer/wix
+          Push-Location Windows/installer/wix
           if (Test-Path Product.wxs) {
             if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
               candle.exe -arch x64 Product.wxs
@@ -96,8 +92,8 @@ jobs:
           } else {
             Write-Host "Product.wxs not found; skipping MSI creation"
           }
-          popd
-        shell: pwsh
+          Pop-Location
+        shell: powershell
 
       - name: Upload publish folder
         uses: actions/upload-artifact@v4
