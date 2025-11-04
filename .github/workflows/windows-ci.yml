@@ -25,10 +25,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup .NET 7
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '7.0.x'
+          dotnet-version: '8.0.x'
 
       - name: Setup MSBuild Tools (Visual Studio)
         uses: microsoft/setup-msbuild@v1
@@ -67,7 +67,7 @@ jobs:
         working-directory: Windows/native
         run: |
           mkdir -Force build
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -D CMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
           cmake --build build --config Release
         shell: powershell
 
@@ -82,13 +82,13 @@ jobs:
       - name: Publish managed app (win-x64)
         if: ${{ github.event.inputs.publish == 'true' }}
         run: |
-          dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }} -r win-x64 -o Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish --self-contained false
+          dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }} -r win-x64 -o Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish --self-contained false
         shell: powershell
 
       - name: Copy native DLL into publish folder
         run: |
           $native = "Windows/native/build/bin/NeoNexusNative.dll"
-          $publish = "Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish"
+          $publish = "Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish"
           if (Test-Path $native) {
             if (-not (Test-Path $publish)) { Write-Host "Publish folder not found; creating $publish"; New-Item -ItemType Directory -Path $publish -Force | Out-Null }
             Copy-Item $native $publish -Force
@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeoNexus-publish-win-x64
-          path: Windows/win/NeoNexus.WinDemo/bin/Release/net7.0-windows/win-x64/publish
+          path: Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish
 
       - name: Upload MSI (if exists)
         uses: actions/upload-artifact@v4
