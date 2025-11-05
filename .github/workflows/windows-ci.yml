@@ -19,6 +19,7 @@ jobs:
     runs-on: windows-latest
     env:
       DOTNET_NOLOGO: 'true'
+      PublishConfig: ${{ github.event.inputs.configuration || 'Release' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +43,6 @@ jobs:
           } else {
             Write-Host "CMake not found. Installing via Chocolatey..."
             choco install cmake -y
-            Write-Host "CMake installation exit code: $LASTEXITCODE"
             cmake --version
           }
         shell: powershell
@@ -55,7 +55,6 @@ jobs:
           } else {
             Write-Host "WiX not found; installing via Chocolatey..."
             choco install wix -y
-            Write-Host "WiX install exit code: $LASTEXITCODE"
           }
         shell: powershell
 
@@ -63,34 +62,53 @@ jobs:
         run: dotnet restore Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj
         shell: powershell
 
-      - name: Build native (CMake x64 Release)
+      - name: Build native (CMake x64 ${{ env.PublishConfig }})
         working-directory: Windows/native
         run: |
           mkdir -Force build
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-          cmake --build build --config Release
+          cmake --build build --config $env:PublishConfig
         shell: powershell
 
       - name: Build managed (dotnet build)
-        run: dotnet build Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }}
+        run: dotnet build Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ env.PublishConfig }}
         shell: powershell
 
       - name: Run unit tests
-        run: dotnet test Windows/tests/managed_tests/NeoNexus.WinDemo.Tests/NeoNexus.WinDemo.Tests.csproj -c ${{ github.event.inputs.configuration || 'Release' }} --no-build --verbosity normal
+        run: dotnet test Windows/tests/managed_tests/NeoNexus.WinDemo.Tests/NeoNexus.WinDemo.Tests.csproj -c ${{ env.PublishConfig }} --no-build --verbosity normal
         shell: powershell
 
       - name: Publish managed app (win-x64)
-        if: ${{ github.event.inputs.publish == 'true' }}
+        if: ${{ contains(toLower(github.event.inputs.publish || 'true'), 'true') }}
         run: |
-          dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c ${{ github.event.inputs.configuration || 'Release' }} -r win-x64 -o Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish --self-contained false
+          $cfg = "${{ env.PublishConfig }}"
+          $out = "Windows/win/NeoNexus.WinDemo/bin/$cfg/net8.0-windows/win-x64/publish"
+          dotnet publish Windows/win/NeoNexus.WinDemo/NeoNexus.WinDemo.csproj -c $cfg -r win-x64 -o $out --self-contained false
+          Write-Host "Published to $out"
+        shell: powershell
+
+      - name: Zip publish folder for debugging & upload
+        if: ${{ contains(toLower(github.event.inputs.publish || 'true'), 'true') }}
+        run: |
+          $cfg = "${{ env.PublishConfig }}"
+          $publish = "Windows/win/NeoNexus.WinDemo/bin/$cfg/net8.0-windows/win-x64/publish"
+          $artifact = "Windows/build/artifacts/NeoNexus-publish.zip"
+          if (Test-Path $publish) {
+            if (Test-Path $artifact) { Remove-Item $artifact -Force }
+            Compress-Archive -Path "$publish\*" -DestinationPath $artifact
+            Write-Host "Created artifact zip: $artifact"
+          } else {
+            Write-Host "Publish folder not found at $publish"
+          }
         shell: powershell
 
       - name: Copy native DLL into publish folder
         run: |
+          $cfg = "${{ env.PublishConfig }}"
           $native = "Windows/native/build/bin/NeoNexusNative.dll"
-          $publish = "Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish"
+          $publish = "Windows/win/NeoNexus.WinDemo/bin/$cfg/net8.0-windows/win-x64/publish"
           if (Test-Path $native) {
-            if (-not (Test-Path $publish)) { Write-Host "Publish folder not found; creating $publish"; New-Item -ItemType Directory -Path $publish -Force | Out-Null }
+            if (-not (Test-Path $publish)) { New-Item -ItemType Directory -Path $publish -Force | Out-Null }
             Copy-Item $native $publish -Force
             Write-Host "Copied native DLL to publish"
           } else {
@@ -101,7 +119,8 @@ jobs:
       - name: Attempt Create MSI with WiX (harvest publish folder with heat.exe)
         run: |
           $wixDir = "Windows/installer/wix"
-          $publish = Resolve-Path "Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish" -ErrorAction SilentlyContinue
+          $cfg = "${{ env.PublishConfig }}"
+          $publish = Resolve-Path "Windows/win/NeoNexus.WinDemo/bin/$cfg/net8.0-windows/win-x64/publish" -ErrorAction SilentlyContinue
           if (-not $publish) {
             Write-Host "Publish folder not found. Ensure publish step ran (set publish=true). Aborting MSI creation."
             exit 0
@@ -112,49 +131,50 @@ jobs:
           Push-Location $wixDir
 
           # Harvest publish folder into a fragment file (PublishFiles.wxs) using heat.exe
-          # -gg: generate GUIDs for components
-          # -srd: suppress root directory element (we will ref INSTALLFOLDER in Product.wxs)
-          # -dr INSTALLFOLDER: set directory reference id
-          # -var var.PublishDir: generate variables instead of absolute paths
-          $heatCmd = "heat.exe dir `"$publishPath`" -cg PublishFiles -gg -sfrag -srd -dr INSTALLFOLDER -var var.PublishDir -out PublishFiles.wxs"
-          Write-Host "Running: $heatCmd"
           & heat.exe dir "$publishPath" -cg PublishFiles -gg -sfrag -srd -dr INSTALLFOLDER -var var.PublishDir -out PublishFiles.wxs
+          if ($LASTEXITCODE -ne 0) { Write-Error "heat.exe failed"; Pop-Location; exit 1 }
 
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "heat.exe failed with exit code $LASTEXITCODE"
-            Pop-Location
-            exit 1
-          }
-
-          # Now call candle on both Product.wxs and PublishFiles.wxs; pass PublishDir variable for relative paths
-          $candleCmd = "candle.exe -arch x64 -dPublishDir=`"$publishPath`" Product.wxs PublishFiles.wxs"
-          Write-Host "Running: $candleCmd"
+          # Compile Product.wxs and harvest fragment
           & candle.exe -arch x64 -dPublishDir="$publishPath" Product.wxs PublishFiles.wxs
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "candle.exe failed with exit code $LASTEXITCODE"
-            Pop-Location
-            exit 1
-          }
+          if ($LASTEXITCODE -ne 0) { Write-Error "candle.exe failed"; Pop-Location; exit 1 }
 
-          # Link with light (include both wixobj files)
-          $lightCmd = "light.exe -ext WixUIExtension Product.wixobj PublishFiles.wixobj -out ../../build/artifacts/NeoNexus.msi"
-          Write-Host "Running: $lightCmd"
-          & light.exe -ext WixUIExtension Product.wixobj PublishFiles.wixobj -out ../../build/artifacts/NeoNexus.msi
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "light.exe failed with exit code $LASTEXITCODE"
-            Pop-Location
-            exit 1
-          }
+          # Link with light, specify base (-b) so files are embedded from publish path
+          & light.exe -ext WixUIExtension -b "$publishPath" Product.wixobj PublishFiles.wixobj -out ../../build/artifacts/NeoNexus.msi
+          if ($LASTEXITCODE -ne 0) { Write-Error "light.exe failed"; Pop-Location; exit 1 }
 
-          Write-Host "MSI created at Windows/build/artifacts/NeoNexus.msi"
+          # Sanity-check MSI size; fail if suspiciously small (< 1 MB)
+          $msi = Resolve-Path ../../build/artifacts/NeoNexus.msi -ErrorAction SilentlyContinue
+          if (-not $msi) { Write-Error "MSI not found after light"; Pop-Location; exit 1 }
+          if ((Get-Item $msi.Path).Length -lt 1MB) { Write-Error "MSI is unexpectedly small (<1MB). Failing build."; Pop-Location; exit 1 }
+
+          Write-Host "MSI created at Windows/build/artifacts/NeoNexus.msi (size: $((Get-Item $msi.Path).Length) bytes)"
+
           Pop-Location
         shell: powershell
 
-      - name: Upload publish folder
+      - name: Upload publish folder zip
         uses: actions/upload-artifact@v4
         with:
-          name: NeoNexus-publish-win-x64
-          path: Windows/win/NeoNexus.WinDemo/bin/Release/net8.0-windows/win-x64/publish
+          name: NeoNexus-publish-zip
+          path: Windows/build/artifacts/NeoNexus-publish.zip
+          if-no-files-found: ignore
+
+      - name: Upload publish folder raw (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoNexus-publish-folder
+          path: Windows/win/NeoNexus.WinDemo/bin/${{ env.PublishConfig }}/net8.0-windows/win-x64/publish
+          if-no-files-found: ignore
+
+      - name: Upload PublishFiles.wxs / wixobj for debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: neo-wix-debug
+          path: |
+            Windows/installer/wix/PublishFiles.wxs
+            Windows/installer/wix/PublishFiles.wixobj
+            Windows/installer/wix/Product.wixobj
+          if-no-files-found: ignore
 
       - name: Upload MSI (if exists)
         uses: actions/upload-artifact@v4
